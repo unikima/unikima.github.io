@@ -1,0 +1,9 @@
+{
+  "nItems": 9998,
+  "nUsers": 53423,
+  "nRatings": 5976441,
+  "svdFactors": 64,
+  "topK": 40,
+  "alpha": 0.6,
+  "globalMean": 3.9195
+}

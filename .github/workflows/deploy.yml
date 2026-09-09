@@ -1,0 +1,70 @@
+# انتشار خودکار سایت روی GitHub Pages
+#
+# با هر push روی شاخه‌ی main، پروژه ساخته و منتشر می‌شود.
+# پیش‌نیاز: در Settings → Pages گزینه‌ی Source روی «GitHub Actions» باشد.
+#
+# این مخزن نام <نام-کاربری>.github.io دارد، بنابراین سایت روی ریشه‌ی
+# دامنه سرو می‌شود و به BASE_PATH نیازی نیست. اگر روزی پروژه را به مخزنی
+# با نام دیگر منتقل کردید، سایت زیر مسیر /<نام-مخزن>/ قرار می‌گیرد و
+# باید در گام «ساخت خروجی ایستا» متغیر BASE_PATH را با همان نام اضافه
+# کنید، وگرنه نشانی فایل‌های مدل اشتباه می‌شود و سایت در حالت «در حال
+# بارگذاری» می‌ماند.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: نصب وابستگی‌ها
+        working-directory: web
+        run: npm ci
+
+      - name: ساخت خروجی ایستا
+        working-directory: web
+        env:
+          STATIC_EXPORT: "1"
+        run: npm run build
+
+      # بدون این فایل، GitHub Pages پوشه‌هایی را که با زیرخط شروع می‌شوند
+      # (مانند _next) نادیده می‌گیرد و سایت بدون استایل و اسکریپت بالا می‌آید.
+      - name: افزودن نشانه‌ی nojekyll
+        run: touch web/out/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
